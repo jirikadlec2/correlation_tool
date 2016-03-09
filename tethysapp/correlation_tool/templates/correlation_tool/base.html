@@ -1,0 +1,44 @@
+{% extends "tethys_apps/app_base.html" %}
+
+{% load staticfiles %}
+
+{% block title %}- {{ tethys_app.name }}{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+
+{% endblock %}
+
+{% block app_icon %}
+  {# The path you provided in your app.py is accessible through the tethys_app.icon context variable #}
+
+  <img src="{% static 'correlation_tool/images/cuahsi_logo_small.png' %}">
+{% endblock %}
+
+{# The name you provided in your app.py is accessible through the tethys_app.name context variable #}
+{% block app_title %}{% endblock %}
+
+{%block app_header%}
+{% endblock %}
+
+
+
+
+{% block exit_button_override %}
+{% endblock %}
+
+{% block app_navigation_toggle_override %}{% endblock %}
+
+{% block app_content %}
+{% endblock %}
+
+{% block app_actions_override %}
+
+{% endblock %}
+
+
+
+{% block scripts %}
+  {{ block.super }}
+  <link href="{% static 'correlation_tool/css/main.css' %}" rel="stylesheet"/>
+{% endblock %}

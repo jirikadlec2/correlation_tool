@@ -1,0 +1,9 @@
+*.pyc
+*.py~
+*.js~
+*.html~
+.idea/*
+.build/*
+workspaces/
+tethysapp_correlation_tool.egg-info/
+*.swp

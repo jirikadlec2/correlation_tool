@@ -1,9 +1,15 @@
 from django.http import JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import render
+from owslib.etree import etree
+from owslib.wps import WebProcessingService
+from owslib.wps import printInputOutput
+from owslib.wps import monitorExecution
+from owslib.wps import WPSExecution
 from wsgiref.util import FileWrapper
 import os
 import correlation
+import requests
 import utilities
 import waterml
 
@@ -66,6 +72,48 @@ def chart_data(request, res_ids):
         data_for_chart = {'series':[{'status':'error loading data. expecting 2 res_id values.'}, None]}
 
     return JsonResponse(data_for_chart)
+
+
+def wps(request, res_ids):
+    print"chart data"
+    print res_ids
+    # checks if there is two resource IDs
+    resources = res_ids.split("_")
+    process_id = 'org.n52.wps.server.r.linear_regression'
+    process_input = [('x_resource_id',str(resources[0])),('y_resource_id',str(resources[1]))]
+
+    url_wps = 'http://127.0.0.1:8282/wps/WebProcessingService'
+
+    my_engine = WebProcessingService(url_wps, verbose=False, skip_caps=True)
+    my_process = my_engine.describeprocess(process_id)
+
+    #executing the process..
+    # build execution
+    execution = WPSExecution(version=my_engine.version, url=my_engine.url, username=my_engine.username,
+                             password=my_engine.password, verbose=my_engine.verbose)
+    requestElement = execution.buildRequest(process_id, process_input, 'output')
+    request = etree.tostring(requestElement)
+    #set store executeresponse to false
+    request = request.replace('storeExecuteResponse="true"', 'storeExecuteResponse="false"')
+    print request
+
+    execution = my_engine.execute(process_id, process_input, 'output', request)
+
+    monitorExecution(execution)
+    status = execution.status
+    print status
+
+    # if the status is successful...
+    if status == 'ProcessSucceeded':
+        outputs = execution.processOutputs
+        output0 = outputs[0]
+        reference0 = output0.reference
+        return JsonResponse({'status': 'success', 'data_url': reference0})
+    else:
+        return JsonResponse({'status': 'wps request failed'})
+
+
+
 
 
 # home page controller

@@ -65,13 +65,6 @@ var chart_options = {
         lineColor: 'lightgray'
 	},
 	legend: {
-	},
-	plotOptions: {
-		scatter: {
-		    marker: {
-		        radius: 5
-		    }
-		}
 	}
 };
 
@@ -97,6 +90,33 @@ function add_series_to_chart(chart, res_ids) {
     res_url = res_ids.replace(',', '_');
     data_url = base_url + 'correlation-tool/chart_data/' + res_url + '/';
     console.log(data_url);
+
+    // we also create the wps url
+    wps_url = base_url + 'correlation-tool/wps/' + res_url + '/';
+    console.log(wps_url)
+
+    // first we send ajax request to the wps
+    $.ajax({
+        url: wps_url,
+        success: function(json) {
+            var status = json.status
+            var data_url = json.data_url
+
+            console.log(status)
+            console.log(data_url)
+
+            add_series_to_chart2(chart, data_url);
+
+        }, error: function(request, ajax_status, ajax_error) {
+            console.log('wps ajax error!');
+            console.log(request.responseText);
+        }
+    })
+
+    var run_chart = false;
+    if (!run_chart) {
+        return;
+    }
 
     $.ajax({
         url: data_url,
@@ -147,6 +167,54 @@ function add_series_to_chart(chart, res_ids) {
             // now we can hide the loading... indicator
             //chart.hideLoading();
             chart.legend.group.hide();
+
+
+
+            finishloading();
+
+            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
+        },
+        error: function() {
+            show_error("Error loading time series from " + res_id);
+        }
+    });
+}
+
+
+function add_series_to_chart2(chart, data_url) {
+
+    $.ajax({
+        url: data_url,
+        success: function(json_string) {
+
+            json = JSON.parse(json_string)
+
+            console.log('add_series_to_chart success!')
+            var x_units='cm';
+            var y_units='cm';
+            // need to fetch metadata for units!
+
+            // add the time series to the chart
+            var series = {
+                id: 0,
+                name:  'Correlation plot series',
+                data: json.data
+            }
+            chart.addSeries(series);
+
+            // set axis titles
+            //chart.yAxis[0].setTitle({ text: json.series[1].variable_name + ' (' + y_units+')' });
+            //chart.xAxis[0].setTitle({text: json.series[0].variable_name + ' (' + x_units+')'});
+
+
+            chart.setTitle({ text: 'Rsquared: ' + json.stats[0].rsquared });
+
+            chart.legend.group.hide();
+
+            finishloading();
+
+            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
+            return;
 
             // add the row to the statistics table
             var number2 = 0;
@@ -214,8 +282,6 @@ function add_series_to_chart(chart, res_ids) {
                     samplemedium= "N/A"
                 }
 
-                console.log(boxplot)
-
                 var series_color = '#7cb5ec';
 
                 var legend = "<td style='text-align:center' bgcolor = "+series_color+"><input id ="+number
@@ -239,6 +305,7 @@ function add_series_to_chart(chart, res_ids) {
         }
     });
 }
+
 
 function myFunc(id)
 {

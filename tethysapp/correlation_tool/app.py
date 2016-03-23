@@ -35,6 +35,10 @@ class CorrelationPlot(TethysAppBase):
                            url='chart_data/{res_ids}',
                            controller='correlation_tool.controllers.chart_data'),
 
+                    UrlMap(name='chart_metadata',
+                           url='chart_metadata/{res_ids}',
+                           controller='correlation_tool.controllers.chart_metadata'),
+
                     UrlMap(name='wps',
                            url='wps/{res_ids}',
                            controller='correlation_tool.controllers.wps')

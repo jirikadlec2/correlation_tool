@@ -81,6 +81,9 @@ function show_error(chart, error_message) {
 }
 
 function add_series_to_chart(chart, res_ids) {
+
+    console.log('add_series_to_chart!');
+
     current_url = location.href;
     index = current_url.indexOf("correlation-tool");
     base_url = current_url.substring(0, index);
@@ -88,8 +91,8 @@ function add_series_to_chart(chart, res_ids) {
     // in the start we show the loading...
     // we send the resource IDs to the chart_data separated by underscore ('_')
     res_url = res_ids.replace(',', '_');
-    data_url = base_url + 'correlation-tool/chart_data/' + res_url + '/';
-    console.log(data_url);
+    metadata_url = base_url + 'correlation-tool/chart_metadata/' + res_url + '/';
+    console.log(metadata_url);
 
     // we also create the wps url
     wps_url = base_url + 'correlation-tool/wps/' + res_url + '/';
@@ -105,7 +108,7 @@ function add_series_to_chart(chart, res_ids) {
             console.log(status)
             console.log(data_url)
 
-            add_series_to_chart2(chart, data_url);
+            add_series_to_chart2(chart, data_url, metadata_url);
 
         }, error: function(request, ajax_status, ajax_error) {
             console.log('wps ajax error!');
@@ -181,7 +184,9 @@ function add_series_to_chart(chart, res_ids) {
 }
 
 
-function add_series_to_chart2(chart, data_url) {
+function add_series_to_chart2(chart, data_url, metadata_url) {
+
+    console.log('add_series_to_chart2!');
 
     $.ajax({
         url: data_url,
@@ -202,109 +207,132 @@ function add_series_to_chart2(chart, data_url) {
             }
             chart.addSeries(series);
 
-            // set axis titles
-            //chart.yAxis[0].setTitle({ text: json.series[1].variable_name + ' (' + y_units+')' });
-            //chart.xAxis[0].setTitle({text: json.series[0].variable_name + ' (' + x_units+')'});
-
-
-            chart.setTitle({ text: 'Rsquared: ' + json.stats[0].rsquared });
+            chart.setTitle({ text: 'R' + '\u00B2' + '=' + json.stats[0].rsquared + ', Intercept = ' + json.stats[0].intercept + ', Slope = ' + json.stats[0].slope});
 
             chart.legend.group.hide();
 
-            finishloading();
-
-            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
-            return;
-
-            // add the row to the statistics table
-            var number2 = 0;
-            number = 0;
-            for (i = 0; i < json.series.length; i++) {
-                //new table
-                metadata = json.series[i];
-                var site_name = metadata.site_name
-                var variable_name = metadata.variable_name
-                var unit = metadata.units
-                var organization = metadata.organization
-                var quality = metadata.quality
-                var method = metadata.method
-                var datatype = metadata.datatype
-                var valuetype = metadata.valuetype
-                var samplemedium = metadata.samplemedium
-                var count = metadata.count
-                var mean = metadata.mean
-                var median = metadata.median
-                var stdev = metadata.stdev
-                var timesupport = metadata.timesupport
-                var timeunit = metadata.timeunit
-                var sourcedescription = metadata.sourcedescription
-
-                number = i
-                number2 = number2 + 1
-                var boxplot_count = number2
-
-                var boxplot = metadata.boxplot
-
-                if(site_name==null){
-                    site_name = "N/A"
-                }
-                if(variable_name==null){
-                    variable_name= "N/A"
-                }
-                if(organization==null){
-                    organization= "N/A"
-                }
-                if(quality==null){
-                    quality= "N/A"
-                }
-                if(method==null){
-                    method= "N/A"
-                }
-                if(datatype==null){
-                    datatype= "N/A"
-                }
-                if(valuetype==null){
-                    valuetype= "N/A"
-                }
-                if(unit==null){
-                    unit= "N/A"
-                }
-                if(timesupport==null){
-                    timesupport= "N/A"
-                }
-                if(timeunit==null){
-                    timeunit= "N/A"
-                }
-                if(sourcedescription==null){
-                    sourcedescription= "N/A"
-                }
-                if(samplemedium==null){
-                    samplemedium= "N/A"
-                }
-
-                var series_color = '#7cb5ec';
-
-                var legend = "<td style='text-align:center' bgcolor = "+series_color+"><input id ="+number
-                    + " type='checkbox' STYLE ='color:"+series_color+"' onClick ='myFunc(this.id);'checked = 'checked'>" + "</td>"
-                var dataset = {legend:legend,organization:organization,name:site_name,variable:variable_name,unit:unit,samplemedium:samplemedium,count:count,
-                    quality:quality,method:method,datatype:datatype,valuetype:valuetype, timesupport:timesupport,timeunit:timeunit,
-                    sourcedescription:sourcedescription,
-                    mean:mean,median:median,stdev:stdev,boxplot:boxplot,boxplot_count:boxplot_count}
-                var table = $('#example').DataTable();
-                table.row.add(dataset).draw();
-
-                //end new table
-            }
-
-            finishloading();
-
-            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
+            // add the data table
+            add_table(chart, metadata_url);
         },
         error: function() {
             show_error("Error loading time series from " + res_id);
         }
     });
 }
+
+
+function add_table(chart, metadata_url) {
+
+    console.log('running add_table ' + metadata_url);
+
+    $.ajax({
+        url: metadata_url,
+        success: function(json) {
+
+            console.log('chart_metadata success!');
+
+            var x_units=json.x.units;
+            var y_units=json.y.units;
+
+            // set axis titles
+            chart.yAxis[0].setTitle({ text: json.y.variable_name + ' (' + y_units+')' });
+            chart.xAxis[0].setTitle({text: json.x.variable_name + ' (' + x_units+')'});
+
+            // add the first row to the statistics table
+            add_row_to_table(json.x, "x", 0);
+            add_row_to_table(json.y, "y", 0);
+
+            finishloading();
+            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
+            return;
+
+
+        }, error: function() {
+            show_error('Error loading data table');
+        }
+    });
+}
+
+
+function add_row_to_table(series, series_name, row_number) {
+
+    console.log('running add_row_to_table!');
+
+    // add the first row to the statistics table
+    var metadata = series
+    var site_name = metadata.site_name
+    var variable_name = metadata.variable_name
+    var unit = metadata.units
+    var organization = metadata.organization
+    var quality = metadata.quality
+    var method = metadata.method
+    var datatype = metadata.datatype
+    var valuetype = metadata.valuetype
+    var samplemedium = metadata.samplemedium
+    var count = metadata.count
+    var mean = metadata.mean
+    var median = metadata.median
+    var stdev = metadata.stdev
+    var timesupport = metadata.timesupport
+    var timeunit = metadata.timeunit
+    var sourcedescription = metadata.sourcedescription
+
+
+    var boxplot = metadata.boxplot
+
+    if(site_name==null){
+        site_name = "N/A"
+    }
+    if(variable_name==null){
+        variable_name= "N/A"
+    }
+    if(organization==null){
+        organization= "N/A"
+    }
+    if(quality==null){
+        quality= "N/A"
+    }
+    if(method==null){
+        method= "N/A"
+    }
+    if(datatype==null){
+        datatype= "N/A"
+    }
+    if(valuetype==null){
+        valuetype= "N/A"
+    }
+    if(unit==null){
+        unit= "N/A"
+    }
+    if(timesupport==null){
+        timesupport= "N/A"
+    }
+    if(timeunit==null){
+        timeunit= "N/A"
+    }
+    if(sourcedescription==null){
+        sourcedescription= "N/A"
+    }
+    if(samplemedium==null){
+        samplemedium= "N/A"
+    }
+
+    var series_color = '#7cb5ec';
+
+
+    var legend = "<td style='text-align:center' bgcolor = "+series_color+">" + series_name + "</td>"
+    var dataset = {legend:legend,organization:organization,name:site_name,variable:variable_name,unit:unit,samplemedium:samplemedium,count:count,
+        quality:quality,method:method,datatype:datatype,valuetype:valuetype, timesupport:timesupport,timeunit:timeunit,
+        sourcedescription:sourcedescription,
+        mean:mean,median:median,stdev:stdev,boxplot:boxplot,boxplot_count:row_number}
+    var table = $('#example').DataTable();
+
+    console.log(dataset);
+    table.row.add(dataset).draw();
+}
+
+
+
 
 
 function myFunc(id)
@@ -323,6 +351,8 @@ var popupDiv = $('#welcome-popup');
 
 $(document).ready(function (callback) {
     var res_ids = find_query_parameter("res_id");
+
+    console.log('document ready!');
 
     var table = $('#example').DataTable( {
         "createdRow":function(row,data,dataIndex)
@@ -406,6 +436,8 @@ $(document).ready(function (callback) {
 
     // add the series to the chart
     main_chart = $('#ts-chart').highcharts();
+
+    console.log('before running add_series_to_chart!');
 
     // this function is responsible for adding the series
     add_series_to_chart(main_chart, res_ids);

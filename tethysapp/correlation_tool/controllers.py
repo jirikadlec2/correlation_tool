@@ -24,6 +24,54 @@ def temp_waterml(request, id):
     return response
 
 
+# formats the time series metadata for highcharts and data table
+def chart_metadata(request, res_ids):
+
+    print"chart metadata"
+    print res_ids
+    # checks if there is two resource IDs
+    resources = res_ids.split("_")
+
+    data_for_chart = {'series':[None, None]}
+    if len(resources) == 2:
+
+        # checks if we already have an unzipped xml file
+        file_path = utilities.waterml_file_path(resources[0])
+        # if we don't have the xml file, downloads and unzips it
+        if not os.path.exists(file_path):
+            utilities.unzip_waterml(request, resources[0])
+        # returns an error message if the unzip_waterml failed
+        if not os.path.exists(file_path):
+            series_X = {'status': 'Resource file not found'}
+        else:
+            # parses the WaterML to a chart data object
+            series_X = waterml.parse(file_path, True)
+
+        # checks if we already have an unzipped xml file
+        file_path = utilities.waterml_file_path(resources[1])
+        # if we don't have the xml file, downloads and unzips it
+        if not os.path.exists(file_path):
+            utilities.unzip_waterml(request, resources[1])
+        # returns an error message if the unzip_waterml failed
+        if not os.path.exists(file_path):
+            series_Y = {'status': 'Resource file not found'}
+        else:
+            # parses the WaterML to a chart data object
+            series_Y = waterml.parse(file_path, True)
+
+        # retrieves the metadata
+        if series_X['status'] == 'success' and series_X['status'] == 'success':
+            series_X['for_highchart'] = None
+            series_Y['for_highchart'] = None
+            metadata = {'status': 'success', 'x': series_X, 'y': series_Y}
+        else:
+            metadata = {'status': 'error reading one of the time series', 'x': None, 'y': None}
+    else:
+        metadata = {'status': 'error loading data, expecting 2 time series, found' + str(len(resources)), 'x': None, 'y': None}
+
+    return JsonResponse(metadata)
+
+
 # formats the time series for highcharts
 def chart_data(request, res_ids):
     print"chart data"
@@ -56,7 +104,7 @@ def chart_data(request, res_ids):
             series1 = {'status': 'Resource file not found'}
         else:
             # parses the WaterML to a chart data object
-            series1 = waterml.parse(file_path)
+            series1 = waterml.parse(file_path, False)
 
         # runs the correlation analysis
         if series0['status'] == 'success' and series1['status'] == 'success':
@@ -75,14 +123,15 @@ def chart_data(request, res_ids):
 
 
 def wps(request, res_ids):
-    print"chart data"
+    print"launch wps"
     print res_ids
     # checks if there is two resource IDs
     resources = res_ids.split("_")
     process_id = 'org.n52.wps.server.r.linear_regression'
     process_input = [('x_resource_id',str(resources[0])),('y_resource_id',str(resources[1]))]
 
-    url_wps = 'http://127.0.0.1:8282/wps/WebProcessingService'
+    #url_wps = 'http://127.0.0.1:8282/wps/WebProcessingService'
+    url_wps = 'http://appsdev.hydroshare.org:8282/wps/WebProcessingService'
 
     my_engine = WebProcessingService(url_wps, verbose=False, skip_caps=True)
     my_process = my_engine.describeprocess(process_id)

@@ -48,7 +48,7 @@ def get_version(root):
     return wml_version
 
 
-def parse_1_0_and_1_1(root):
+def parse_1_0_and_1_1(root, metadata_only=False):
     print "running parse_1_0_and_1_1"
     root_tag = root.tag.lower()
     print "root tag: " + root_tag
@@ -122,7 +122,7 @@ def parse_1_0_and_1_1(root):
                 if v >= smallest_value:
                     smallest_value = v
 
-            for i in range(0, len(my_times)):
+            for i in range(0, len(my_values)):
 
                 # parse date and time
                 #t = dateutil.parser.parse(my_times[i], ignoretz=True)
@@ -130,19 +130,28 @@ def parse_1_0_and_1_1(root):
                 # formatting time for HighCharts (milliseconds since Jan1 1970)
                 #t = int((t - datetime(1970, 1, 1)).total_seconds() * 1000)
 
-                t = time.mktime(time.strptime(my_times[i],'%Y-%m-%dT%H:%M:%S'))
+                if metadata_only == False:
+                    t = time.mktime(time.strptime(my_times[i],'%Y-%m-%dT%H:%M:%S'))
 
                 # check to see if there are null values in the time series
                 if my_values[i] == nodata:
-                    for_highchart.append([t, None])
+                    if metadata_only == False:
+                        for_highchart.append([t, None])
                 else:
-                    for_highchart.append([t, float(my_values[i])])
                     for_graph.append(float(my_values[i]))
+                    if metadata_only == False:
+                        for_highchart.append([t, float(my_values[i])])
 
+            value_count = len(for_graph)
+            if metadata_only == False:
+                smallest_time = for_highchart[0][0]
+                largest_time = for_highchart[value_count - 1][0]
+            else:
+                smallest_time = 0
+                largest_time = 0
 
-            smallest_time = for_highchart[0][0]
-            value_count = len(for_highchart)
-            largest_time = for_highchart[value_count - 1][0]
+            value_count = len(my_values)
+
 
             # End of measuring the WaterML processing time...
             print "convert time time: " + str(time.time() - t0)
@@ -335,14 +344,14 @@ def parse_2_0(root):
         return "Parsing error: The Data in the Url, or in the request, was not correctly formatted."
 
 
-def parse(xml_file):
+def parse(xml_file, metadata_only):
     try:
         tree = etree.parse(xml_file)
         root = tree.getroot()
 
         wml_version = get_version(root)
         if wml_version == '1':
-            return parse_1_0_and_1_1(root)
+            return parse_1_0_and_1_1(root, metadata_only)
         elif wml_version == '2.0':
             return parse_2_0(root)
     except ValueError, e:

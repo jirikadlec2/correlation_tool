@@ -80,124 +80,39 @@ function show_error(chart, error_message) {
     chart.setTitle({ text: "" });
 }
 
+
 function add_series_to_chart(chart, res_ids) {
 
     console.log('add_series_to_chart!');
 
-    current_url = location.href;
-    index = current_url.indexOf("correlation-tool");
-    base_url = current_url.substring(0, index);
+    var current_url = location.href;
+    var index = current_url.indexOf("correlation-tool");
+    var base_url = current_url.substring(0, index);
 
-    // in the start we show the loading...
-    // we send the resource IDs to the chart_data separated by underscore ('_')
-    res_url = res_ids.replace(',', '_');
-    metadata_url = base_url + 'correlation-tool/chart_metadata/' + res_url + '/';
+    // we send the two resource IDs to the controller joined by underscore ('_')
+    var res_url = res_ids.replace(',', '_');
+
+    // URL to get the metadata (used for the legend table)
+    var metadata_url = base_url + 'correlation-tool/chart_metadata/' + res_url + '/';
+
+    // URL to get the WPS result (used for the scatter plot chart)
+    var wps_url = base_url + 'correlation-tool/wps/' + res_url + '/';
+
     console.log(metadata_url);
+    console.log(wps_url);
 
-    // we also create the wps url
-    wps_url = base_url + 'correlation-tool/wps/' + res_url + '/';
-    console.log(wps_url)
+    // add the legend table (this is run asynchronously)
+    add_table(chart, metadata_url);
 
-    // first we send ajax request to the wps
+    // call the WPS and add the scatter plot data (this is run asynchronously)
     $.ajax({
         url: wps_url,
         success: function(json) {
-            var status = json.status
-            var data_url = json.data_url
 
-            console.log(status)
-            console.log(data_url)
+            //json = JSON.parse(json_string)
+            console.log('add_series_to_chart2 data received!')
 
-            add_series_to_chart2(chart, data_url, metadata_url);
-
-        }, error: function(request, ajax_status, ajax_error) {
-            console.log('wps ajax error!');
-            console.log(request.responseText);
-        }
-    })
-
-    var run_chart = false;
-    if (!run_chart) {
-        return;
-    }
-
-    $.ajax({
-        url: data_url,
-        success: function(json) {
-            // first of all check for the status
-            var status1 = json.series[0].status;
-            if (status1 !== 'success') {
-                res_id1 = res_ids.split('_')[0];
-                show_error(chart, "Error loading time series from " + res_id1 + ": " + status1);
-                return;
-            }
-            var status2 = json.series[1].status;
-            if (status2 !== 'success') {
-                res_id2 = res_ids.split('_')[1];
-                show_error(chart, "Error loading time series from " + res_id2 + ": " + status2);
-                return;
-            }
-
-            console.log('initial loading data successful')
-
-            // set the x and y axis title and units
-            var x_units = json.series[0].units;
-            if(x_units==null) {
-                x_units = "";
-            }
-            console.log('x_units: ' + x_units);
-
-            var y_units = json.series[1].units;
-            if(y_units==null) {
-                y_units = "";
-            }
-            console.log('y_units: ' + y_units);
-
-            // add the time series to the chart
-            var series = {
-                id: 0,
-                name:  'Correlation plot series',
-                data: json.xy.data
-            }
-            chart.addSeries(series);
-
-            // set axis titles
-            chart.yAxis[0].setTitle({ text: json.series[1].variable_name + ' (' + y_units+')' });
-            chart.xAxis[0].setTitle({text: json.series[0].variable_name + ' (' + x_units+')'});
-
-
-            chart.setTitle({ text: "Correlation Plot" });
-            // now we can hide the loading... indicator
-            //chart.hideLoading();
-            chart.legend.group.hide();
-
-
-
-            finishloading();
-
-            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
-        },
-        error: function() {
-            show_error("Error loading time series from " + res_id);
-        }
-    });
-}
-
-
-function add_series_to_chart2(chart, data_url, metadata_url) {
-
-    console.log('add_series_to_chart2!');
-
-    $.ajax({
-        url: data_url,
-        success: function(json_string) {
-
-            json = JSON.parse(json_string)
-
-            console.log('add_series_to_chart success!')
-            var x_units='cm';
-            var y_units='cm';
-            // need to fetch metadata for units!
+            // here we must check if the WPS execution was successful
 
             // add the time series to the chart
             var series = {
@@ -205,19 +120,28 @@ function add_series_to_chart2(chart, data_url, metadata_url) {
                 name:  'Correlation plot series',
                 data: json.data
             }
+
+            // this part seems to be taking lots of time ...
             chart.addSeries(series);
 
-            chart.setTitle({ text: 'R' + '\u00B2' + '=' + json.stats[0].rsquared + ', Intercept = ' + json.stats[0].intercept + ', Slope = ' + json.stats[0].slope});
+            console.log('add_series_to_chart2 series added!')
+
+            // set the chart title with Rsquared, intercept and slope of regression
+            var chartTitle = 'R' + '\u00B2' + '=' + json.stats[0].rsquared +
+                                ', Intercept = ' + json.stats[0].intercept +
+                                ', Slope = ' + json.stats[0].slope;
+            chart.setTitle({ text: chartTitle});
 
             chart.legend.group.hide();
 
-            // add the data table
-            add_table(chart, metadata_url);
+            finishloading();
+            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
         },
         error: function() {
             show_error("Error loading time series from " + res_id);
         }
     });
+
 }
 
 
@@ -242,11 +166,6 @@ function add_table(chart, metadata_url) {
             add_row_to_table(json.x, "x", 0);
             add_row_to_table(json.y, "y", 0);
 
-            finishloading();
-            $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
-            return;
-
-
         }, error: function() {
             show_error('Error loading data table');
         }
@@ -254,12 +173,9 @@ function add_table(chart, metadata_url) {
 }
 
 
-function add_row_to_table(series, series_name, row_number) {
+function add_row_to_table(metadata, series_name, row_number) {
 
-    console.log('running add_row_to_table!');
-
-    // add the first row to the statistics table
-    var metadata = series
+    // adding a row to the legend data table
     var site_name = metadata.site_name
     var variable_name = metadata.variable_name
     var unit = metadata.units
@@ -276,49 +192,23 @@ function add_row_to_table(series, series_name, row_number) {
     var timesupport = metadata.timesupport
     var timeunit = metadata.timeunit
     var sourcedescription = metadata.sourcedescription
-
-
     var boxplot = metadata.boxplot
 
-    if(site_name==null){
-        site_name = "N/A"
-    }
-    if(variable_name==null){
-        variable_name= "N/A"
-    }
-    if(organization==null){
-        organization= "N/A"
-    }
-    if(quality==null){
-        quality= "N/A"
-    }
-    if(method==null){
-        method= "N/A"
-    }
-    if(datatype==null){
-        datatype= "N/A"
-    }
-    if(valuetype==null){
-        valuetype= "N/A"
-    }
-    if(unit==null){
-        unit= "N/A"
-    }
-    if(timesupport==null){
-        timesupport= "N/A"
-    }
-    if(timeunit==null){
-        timeunit= "N/A"
-    }
-    if(sourcedescription==null){
-        sourcedescription= "N/A"
-    }
-    if(samplemedium==null){
-        samplemedium= "N/A"
-    }
+    // replace null with N/A for the data table
+    if (site_name==null) site_name = "N/A";
+    if (variable_name==null) variable_name = "N/A";
+    if (organization==null) organization = "N/A";
+    if (quality==null) quality = "N/A";
+    if (method==null) method = "N/A";
+    if(datatype==null) datatype = "N/A";
+    if(valuetype==null) valuetype = "N/A";
+    if(unit==null) unit = "N/A";
+    if (timesupport==null) timesupport = "N/A";
+    if(timeunit==null) timeunit = "N/A";
+    if(sourcedescription==null) sourcedescription = "N/A";
+    if(samplemedium==null) samplemedium = "N/A";
 
     var series_color = '#7cb5ec';
-
 
     var legend = "<td style='text-align:center' bgcolor = "+series_color+">" + series_name + "</td>"
     var dataset = {legend:legend,organization:organization,name:site_name,variable:variable_name,unit:unit,samplemedium:samplemedium,count:count,
@@ -327,7 +217,6 @@ function add_row_to_table(series, series_name, row_number) {
         mean:mean,median:median,stdev:stdev,boxplot:boxplot,boxplot_count:row_number}
     var table = $('#example').DataTable();
 
-    console.log(dataset);
     table.row.add(dataset).draw();
 }
 
@@ -439,7 +328,7 @@ $(document).ready(function (callback) {
 
     console.log('before running add_series_to_chart!');
 
-    // this function is responsible for adding the series
+    // call the function is responsible for adding the series to the chart
     add_series_to_chart(main_chart, res_ids);
 
     // change the app title

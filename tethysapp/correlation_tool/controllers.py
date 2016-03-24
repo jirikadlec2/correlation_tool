@@ -5,6 +5,7 @@ from django.shortcuts import render
 from wsgiref.util import FileWrapper
 import os
 import correlation
+import requests
 import utilities
 import waterml
 import wps_utilities
@@ -121,6 +122,23 @@ def chart_data(request, res_ids):
 # wps controller
 def wps(request, res_ids):
     return wps_utilities.run_wps(request, res_ids)
+
+# R script controller
+def r_script(request, res_ids):
+
+    resources = res_ids.split("_")
+
+    wps_url = 'http://appsdev.hydroshare.org:8282/wps/'
+    script_url = wps_url + 'R/scripts/' + 'regression_analysis_01.R'
+    output_data = requests.get(script_url)
+    output_text = output_data.content
+
+    # replace the resource_IDs in the script
+    output_text = output_text.replace('cuahsi-wdc-2016-03-18-65414769', resources[0])
+    output_text = output_text.replace('cuahsi-wdc-2016-03-18-65423687', resources[1])
+
+    resp = HttpResponse(output_text, content_type="text/plain; charset=utf-8")
+    return resp
 
 
 # home page controller

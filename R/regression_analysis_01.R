@@ -20,10 +20,7 @@
 # minOccurs = 1, maxOccurs = 1;
 
 #wps.out: id = output, type = text, title = regression scatter plot values,
-# abstract = regression scatter plot values;
-
-#wps.out: id = rsquared, type = double, title = R-squared coefficient,
-# abstract = R squared of the linear regression relationship;
+# abstract = regression scatter plot values with the regression coefficients;
 
 ######################################
 # R Correlation Plot Test!           #
@@ -65,22 +62,28 @@ lines(DataValue~time, data=values2, type="l", col="red")
 # merge the two time series
 merged = merge(values1, values2, by="time")
 
-# make scatterplot
-plot(DataValue.y~DataValue.x, data=merged)
-
 # make regression model
 m = lm(DataValue.y~DataValue.x, data=merged)
-summary(m)
-abline(m, col="red")
+
+# get the intercept, slope and Rsquared from the model
 intercept = m$coefficients[1]
 slope = m$coefficients[2]
 rsquared <- round(summary(m)$r.squared, digits=4)
 
+# make scatterplot with regression line
+#wps.off;
+plot(DataValue.y~DataValue.x, data=merged)
+abline(m, col="red")
+#wps.on;
+
 # write output data in JSON format
 output1 = data.frame(x=merged$DataValue.x, y=merged$DataValue.y)
+
+# remove 'no data' values from the output data
 output_valid = output1[complete.cases(output1),]
+
+# name of output data file
 output = "output_data.json"
 output_json = toJSON(list(stats=data.frame(rsquared=rsquared, intercept=intercept, slope=slope), 
                           data=setNames(output_valid, NULL)))
 write(output_json, output)
-#write.table(output_valid, output, sep=",", row.names=FALSE)

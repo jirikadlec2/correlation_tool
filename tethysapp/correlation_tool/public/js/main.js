@@ -70,14 +70,15 @@ var chart_options = {
 
 // shows an error message in the chart title
 function show_error(chart, error_message) {
-    chart.legend.group.hide();
-    var button = chart.exportSVGElements[0];
-    button.destroy();
-    chart.hideLoading();
+
+    //var button = chart.exportSVGElements[0];
+    //button.destroy();
+    //chart.hideLoading();
     $('#metadata-loading').hide();
     console.log(error_message);
     $('#error-message').text(error_message);
-    chart.setTitle({ text: "" });
+    //chart.setTitle({ text: "" });
+    finishloading()
 }
 
 
@@ -98,8 +99,15 @@ function add_series_to_chart(chart, res_ids) {
     // URL to get the WPS result (used for the scatter plot chart)
     var wps_url = base_url + 'correlation-tool/wps/' + res_url + '/';
 
+    // URL to get the script link
+    var R_script_url = base_url + 'correlation-tool/r-script/' + res_url + '/' + 'correlation-tool.R';
+
     console.log(metadata_url);
     console.log(wps_url);
+    console.log(R_script_url);
+
+    // set the R script URL
+    $('.r-script').attr('href', R_script_url);
 
     // add the legend table (this is run asynchronously)
     add_table(chart, metadata_url);
@@ -138,7 +146,7 @@ function add_series_to_chart(chart, res_ids) {
             $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
         },
         error: function() {
-            show_error("Error loading time series from " + res_id);
+            show_error("Error loading time series from " + wps_url);
         }
     });
 
@@ -321,7 +329,7 @@ $(document).ready(function (callback) {
     $('#ts-chart').hide()
     $('#stat_div').hide();
     $('#button').hide();
-
+    $('.r-script').hide();
 
     // add the series to the chart
     main_chart = $('#ts-chart').highcharts();
@@ -424,6 +432,7 @@ function finishloading(callback)
     $('#ts-chart').show()
     $('#stat_div').show();
     $('#button').show();
+    $('.r-script').show();
     $(window).resize();
     $('#loading').hide();
 }

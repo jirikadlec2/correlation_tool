@@ -106,7 +106,7 @@ function add_series_to_chart(chart, res_ids) {
     console.log(wps_url);
     console.log(R_script_url);
 
-    // set the R script URL
+    // setup the R script hyperlink at the bottom of the page
     $('.r-script').attr('href', R_script_url);
 
     // add the legend table (this is run asynchronously)
@@ -117,7 +117,6 @@ function add_series_to_chart(chart, res_ids) {
         url: wps_url,
         success: function(json) {
 
-            //json = JSON.parse(json_string)
             console.log('add_series_to_chart2 data received!')
 
             // here we must check if the WPS execution was successful
@@ -146,7 +145,7 @@ function add_series_to_chart(chart, res_ids) {
             $(window).resize();//This fixes an error where the grid lines are misdrawn when legend layout is set to vertical
         },
         error: function() {
-            show_error("Error loading time series from " + wps_url);
+            show_error(chart, "Error running correlation analysis: " + wps_url);
         }
     });
 
@@ -162,6 +161,16 @@ function add_table(chart, metadata_url) {
         success: function(json) {
 
             console.log('chart_metadata success!');
+
+            // checking the status of both series
+            if (json.x.status !== 'success') {
+                show_error('Error loading time series: ' + json.x.status);
+                return;
+            }
+            if (json.y.status !== 'success') {
+                show_error('Error loading time series: ' + json.y.status);
+                return;
+            }
 
             var x_units=json.x.units;
             var y_units=json.y.units;
@@ -252,10 +261,6 @@ $(document).ready(function (callback) {
     console.log('document ready!');
 
     var table = $('#example').DataTable( {
-        "createdRow":function(row,data,dataIndex)
-        {
-            //$('td',row).eq(0).css("backgroundColor", chart.series[number].color)
-        },
         data: data,
         "columns":
             [

@@ -1,20 +1,11 @@
-from lxml import etree
-import numpy
 import requests
 
-from datetime import datetime
-from datetime import timedelta
-from dateutil import parser
-from django.http import HttpResponse
-
 from .app import CorrelationPlot
-import csv
 import zipfile
 import StringIO
 import time
 import zipfile
 import os
-
 
 
 def get_app_base_uri(request):
@@ -77,11 +68,6 @@ def unzip_waterml(request, res_id):
 
         # error handling
 
-        # checks to see if data is an xml
-        except etree.XMLSyntaxError as e:
-            print "Error:Not XML"
-            return False
-
         # checks to see if Url is valid
         except ValueError, e:
             print "Error:invalid Url"
@@ -120,20 +106,3 @@ def file_unzipper(url_cuashi):
     for  file in file_list:
         z.read(file)
     return file_list
-
-
-
-def csv_reader(file):
-    #this was designed to read the cuashi data which is in csv format, however, this likely change to waterml format
-    for_highchart=[]
-    z_object = file.open("nwisuv-salt_creek_at_nephi,_ut-gage_height,_feet.csv")
-    csv_cuashi = csv.reader(z_object)
-
-    for row in csv_cuashi:
-        #row   associate time_obj and val_obj with row values
-        time_obj = row[0]
-        val_obj = row[3]
-        item=[time_obj,val_obj]
-        for_highchart.append(item)
-
-    return for_highchart

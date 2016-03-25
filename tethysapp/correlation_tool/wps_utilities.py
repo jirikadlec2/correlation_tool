@@ -5,18 +5,21 @@ from owslib.etree import etree
 from owslib.wps import WebProcessingService
 from owslib.wps import monitorExecution
 from owslib.wps import WPSExecution
+from app import CorrelationPlot
 
-def run_wps(request, res_ids):
+def run_wps(res_ids):
     print"launch wps"
     print res_ids
     # checks if there is two resource IDs
     resources = res_ids.split("_")
+    if len(resources) < 2:
+        return JsonResponse({'status': 'wps request failed. 2 resources are required, found ' + str(len(resources))})
+
     process_id = 'org.n52.wps.server.r.linear_regression'
     process_input = [('x_resource_id',str(resources[0])),('y_resource_id',str(resources[1]))]
 
-    #setting the WPS URL: local or appsdev
-    #url_wps = 'http://127.0.0.1:8282/wps/WebProcessingService'
-    url_wps = 'http://appsdev.hydroshare.org:8282/wps/WebProcessingService'
+    #setting the WPS URL is set in app.py
+    url_wps = CorrelationPlot.wps_url + '/WebProcessingService'
 
     my_engine = WebProcessingService(url_wps, verbose=False, skip_caps=True)
     my_process = my_engine.describeprocess(process_id)
@@ -48,6 +51,5 @@ def run_wps(request, res_ids):
         resp = HttpResponse(output_data, content_type="application/json")
         return resp
 
-        # return JsonResponse({'status': 'success', 'data_url': reference0})
     else:
         return JsonResponse({'status': 'wps request failed'})

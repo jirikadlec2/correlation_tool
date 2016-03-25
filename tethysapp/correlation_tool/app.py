@@ -16,6 +16,9 @@ class CorrelationPlot(TethysAppBase):
     enable_feedback = False
     feedback_emails = []
 
+    # setting for the WPS URL
+    wps_url = 'http://appsdev.hydroshare.org:8282/wps/'
+
         
     def url_maps(self):
         """
@@ -26,14 +29,6 @@ class CorrelationPlot(TethysAppBase):
         url_maps = (UrlMap(name='home',
                            url='correlation-tool',
                            controller='correlation_tool.controllers.home'),
-
-                    UrlMap(name='temp_waterml',
-                           url='temp_waterml/{id}',
-                           controller='correlation_tool.controllers.temp_waterml'),
-
-                    UrlMap(name='chart_data',
-                           url='chart_data/{res_ids}',
-                           controller='correlation_tool.controllers.chart_data'),
 
                     UrlMap(name='chart_metadata',
                            url='chart_metadata/{res_ids}',

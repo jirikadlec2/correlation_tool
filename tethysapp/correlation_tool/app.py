@@ -8,7 +8,7 @@ class CorrelationPlot(TethysAppBase):
 
     name = 'Correlation Plot'
     index = 'correlation_tool:home'
-    icon = 'correlation_tool/images/icon.gif'
+    icon = 'correlation_tool/images/corelation_2.gif'
     package = 'correlation_tool'
     root_url = 'correlation-tool'
     color = '#e67e22'

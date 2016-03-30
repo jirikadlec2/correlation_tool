@@ -117,7 +117,7 @@ function add_series_to_chart(chart, res_ids) {
         url: wps_url,
         success: function(json) {
 
-            console.log('add_series_to_chart2 data received!')
+            console.log('add_series_to_chart data received!')
 
             // here we must check if the WPS execution was successful
 
@@ -341,6 +341,10 @@ $(document).ready(function (callback) {
 
     console.log('before running add_series_to_chart!');
 
+    if (res_ids == null) {
+        finishloading();
+        return;
+    }
     // call the function is responsible for adding the series to the chart
     add_series_to_chart(main_chart, res_ids);
 

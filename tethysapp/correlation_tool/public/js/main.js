@@ -118,7 +118,7 @@ function add_series_to_chart(chart, res_ids) {
         success: function(json) {
 
             console.log('add_series_to_chart data received!')
-
+            console.log(json.data)
             // here we must check if the WPS execution was successful
 
             // add the time series to the chart

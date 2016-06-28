@@ -30,11 +30,11 @@ library(WaterML)
 library(jsonlite)
 
 #wps.off;
-x_resource_id = "cuahsi-wdc-2016-03-18-65414769"
-y_resource_id = "cuahsi-wdc-2016-03-18-65423687"
+x_resource_id = "cuahsi-wdc-2016-06-28-76101213"
+y_resource_id = "cuahsi-wdc-2016-06-28-76101213"
 #wps.on;
   
-cuahsi_url = "http://bcc-hiswebclient.azurewebsites.net/CUAHSI/HydroClient/WaterOneFlowArchive/"
+cuahsi_url = 'http://qa-webclient-solr.azurewebsites.net/CUAHSI/HydroClient/WaterOneFlowArchive/'
 url1 = paste0(cuahsi_url, x_resource_id, "/zip")
 url2 = paste0(cuahsi_url, y_resource_id, "/zip")
 
